@@ -30,7 +30,35 @@ export const useMutateTask = () => {
       },
     }
   )
+  const updateTaskMutation = useMutation(
+    (task: Omit<Task, 'created_at' | 'updated_at'>) =>
+      axios.put<Task>(`${process.env.REACT_APP_API_URL}/tasks/${task.id}`, {
+        title: task.title,
+      }),
+    {
+      onSuccess: (res, variables) => {
+        const previousTasks = queryClient.getQueryData<Task[]>(['tasks'])
+        if (previousTasks) {
+          queryClient.setQueryData<Task[]>(
+            ['tasks'],
+            previousTasks.map((task) =>
+              task.id === variables.id ? res.data : task
+            )
+          )
+        }
+        resetEditedTask()
+      },
+      onError: (err: any) => {
+        if (err.response.data.message) {
+          switchErrorHandling(err.response.data.message)
+        } else {
+          switchErrorHandling(err.response.data)
+        }
+      },
+    }
+  )
   return {
-    createTaskMutation
+    createTaskMutation,
+    updateTaskMutation
   }
 }
